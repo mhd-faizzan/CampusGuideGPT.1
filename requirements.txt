@@ -1,0 +1,6 @@
+requests
+faiss-cpu
+langchain
+pandas
+streamlit
+openai
