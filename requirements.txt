@@ -1,7 +1,6 @@
+streamlit
 requests
 faiss-cpu
 langchain
 pandas
-streamlit
 openai
-requests
