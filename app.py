@@ -42,8 +42,11 @@ def get_groq_model_response(api_key, model_name, prompt):
 df = pd.read_csv("data/hochschule_harz_data.csv")
 texts = df.apply(lambda row: f"{row['University']} - {row['Course']} - {row['Admission Deadline']} - {row['Language']} - {row['Fees']}", axis=1).tolist()
 
+# Assuming you're using a custom embedding model for FAISS (not OpenAI)
+# No need to initialize OpenAIEmbeddings, just directly use FAISS
+embedding_model = None  # You can replace with your own custom embedding model if needed
+
 # Initialize FAISS index and store embeddings
-embedding_model = None  # FAISS will handle the embeddings directly
 vector_store = FAISS.from_texts(texts, embedding_model)
 vector_store.save_local("faiss_index")
 
