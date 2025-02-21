@@ -3,23 +3,18 @@ import pandas as pd
 import faiss
 import requests
 import streamlit as st
-from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Fetch Groq API Key from the environment
-api_key = os.getenv("GROQ_API_KEY")
+# Fetch Groq API Key from Streamlit secrets
+api_key = st.secrets["GROQ_API_KEY"]
 
 # Ensure the API key is available
 if not api_key:
-    st.error("API key is missing. Please add it to the .env file.")
+    st.error("API key is missing in Streamlit secrets.")
     st.stop()
 
-# Fetch the model name from environment variables or use the provided model
-model_name = os.getenv("MODEL_NAME", "llama-3.3-70b-versatile")
+# Fetch the model name from Streamlit secrets or use the provided model
+model_name = st.secrets.get("MODEL_NAME", "llama-3.3-70b-versatile")
 
 # Function to interact with Groq API
 def get_groq_model_response(api_key, model_name, prompt):
@@ -43,14 +38,12 @@ def get_groq_model_response(api_key, model_name, prompt):
     else:
         return f"Error: {response.status_code}, {response.text}"
 
-# Initialize FAISS and OpenAI Embeddings
-embedding_model = OpenAIEmbeddings()
-
 # Load Hochschule Harz data (replace with actual data path)
 df = pd.read_csv("data/hochschule_harz_data.csv")
 texts = df.apply(lambda row: f"{row['University']} - {row['Course']} - {row['Admission Deadline']} - {row['Language']} - {row['Fees']}", axis=1).tolist()
 
-# Create FAISS index and save it locally
+# Initialize FAISS index and store embeddings
+embedding_model = None  # FAISS will handle the embeddings directly
 vector_store = FAISS.from_texts(texts, embedding_model)
 vector_store.save_local("faiss_index")
 
