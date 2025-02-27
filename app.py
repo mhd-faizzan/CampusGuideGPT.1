@@ -3,66 +3,78 @@ import pandas as pd
 import faiss
 import requests
 import streamlit as st
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS  # Updated import
+from langchain.embeddings import HuggingFaceEmbeddings
+from sentence_transformers import SentenceTransformer
 
-# Fetch Groq API Key from Streamlit secrets
-api_key = st.secrets["GROQ_API_KEY"]
+# Ensure directories exist
+if not os.path.exists("faiss_index"):
+    os.makedirs("faiss_index")
 
-# Ensure the API key is available
+# Fetch API key from Streamlit secrets
+api_key = st.secrets.get("GROQ_API_KEY", None)
 if not api_key:
     st.error("API key is missing in Streamlit secrets.")
     st.stop()
 
-# Fetch the model name from Streamlit secrets or use the provided model
+# Fetch model name from secrets or use a default
 model_name = st.secrets.get("MODEL_NAME", "llama-3.3-70b-versatile")
 
-# Function to interact with Groq API
-def get_groq_model_response(api_key, model_name, prompt):
-    url = f"https://api.groq.com/openai/v1/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    
-    data = {
-        "model": model_name,
-        "prompt": prompt,
-        "max_tokens": 200,
-        "temperature": 0.7
-    }
-    
-    response = requests.post(url, headers=headers, json=data)
-    
-    if response.status_code == 200:
-        return response.json()["choices"][0]["text"].strip()
-    else:
-        return f"Error: {response.status_code}, {response.text}"
+# Load Hochschule Harz data
+data_path = "data/hochschule_harz_data.csv"
+if not os.path.exists(data_path):
+    st.error(f"Missing data file: {data_path}")
+    st.stop()
 
-# Load Hochschule Harz data (replace with actual data path)
-df = pd.read_csv("data/hochschule_harz_data.csv")
+df = pd.read_csv(data_path)
+
+# Ensure required columns exist
+required_columns = {"University", "Course", "Admission Deadline", "Language", "Fees"}
+if not required_columns.issubset(df.columns):
+    st.error(f"CSV file must contain columns: {', '.join(required_columns)}")
+    st.stop()
+
+# Convert data into text format for embeddings
 texts = df.apply(lambda row: f"{row['University']} - {row['Course']} - {row['Admission Deadline']} - {row['Language']} - {row['Fees']}", axis=1).tolist()
 
-# Assuming you're using a custom embedding model for FAISS (not OpenAI)
-# No need to initialize OpenAIEmbeddings, just directly use FAISS
-embedding_model = None  # You can replace with your own custom embedding model if needed
+# Load sentence transformer model
+embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-# Initialize FAISS index and store embeddings
-vector_store = FAISS.from_texts(texts, embedding_model)
-vector_store.save_local("faiss_index")
+# Initialize or load FAISS index
+index_path = "faiss_index/index"
+if os.path.exists(index_path + ".faiss"):
+    vector_store = FAISS.load_local(index_path, embedding_model)
+else:
+    vector_store = FAISS.from_texts(texts, embedding_model)
+    vector_store.save_local(index_path)
 
 # Streamlit app interface
 st.title("🎓 CampusGuideGPT - Hochschule Harz Info")
 
-# User input for query
+# User input
 user_query = st.text_input("Ask about Hochschule Harz admissions, courses, and deadlines:")
 
 if user_query:
-    # Query FAISS for relevant data
-    results = vector_store.similarity_search(user_query, k=2)
+    # Convert query to embeddings
+    query_embedding = embedding_model.embed_query(user_query)
+
+    # Retrieve relevant information
+    results = vector_store.similarity_search_by_vector(query_embedding, k=2)
     relevant_info = "\n".join([result.page_content for result in results])
-    
-    # Generate a response using Groq's LLaMA model
+
+    # Generate response using Groq API
+    def get_groq_model_response(api_key, model_name, prompt):
+        url = "https://api.groq.com/openai/v1/completions"
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        data = {"model": model_name, "prompt": prompt, "max_tokens": 200, "temperature": 0.7, "stop": ["\n"]}
+        response = requests.post(url, headers=headers, json=data)
+
+        if response.status_code == 200:
+            return response.json()["choices"][0]["text"].strip()
+        else:
+            return f"Error: {response.status_code}, {response.text}"
+
     groq_response = get_groq_model_response(api_key, model_name, f"Answer the question based on this information: {relevant_info}\n\nQuestion: {user_query}")
-    
-    # Display response in Streamlit
+
+    # Display response
     st.write(groq_response)
