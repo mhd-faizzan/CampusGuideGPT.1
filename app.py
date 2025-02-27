@@ -7,25 +7,23 @@ from langchain_community.vectorstores import FAISS  # Updated import
 from langchain.embeddings import HuggingFaceEmbeddings
 from sentence_transformers import SentenceTransformer
 
-# Ensure directories exist
-if not os.path.exists("faiss_index"):
-    os.makedirs("faiss_index")
+# Set the correct path for the data file
+data_path = os.path.join(os.getcwd(), "data", "HS_Harz_data.csv")
 
-# Fetch API key from Streamlit secrets
-api_key = st.secrets.get("GROQ_API_KEY", None)
-if not api_key:
-    st.error("API key is missing in Streamlit secrets.")
-    st.stop()
+# Debugging: Print current working directory and check files
+st.write("🔹 Current Working Directory:", os.getcwd())
+st.write("🔹 Files in Current Directory:", os.listdir())
+st.write("🔹 Does 'data' folder exist?", os.path.exists("data"))
+st.write("🔹 Files inside 'data' folder:", os.listdir("data") if os.path.exists("data") else "Folder not found")
+st.write("🔹 Full file path:", os.path.abspath(data_path))
+st.write("🔹 Does the file exist?", os.path.exists(data_path))
 
-# Fetch model name from secrets or use a default
-model_name = st.secrets.get("MODEL_NAME", "llama-3.3-70b-versatile")
-
-# Load Hochschule Harz data
-data_path = "data/HS_Harz_data.csv"  # 🔹 Updated file name here
+# Check if the data file exists
 if not os.path.exists(data_path):
     st.error(f"Missing data file: {data_path}")
     st.stop()
 
+# Load Hochschule Harz data
 df = pd.read_csv(data_path)
 
 # Ensure required columns exist
