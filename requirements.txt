@@ -1,4 +1,4 @@
-faiss-cpu
+faiss-gpu
 langchain==0.1.16
 langchain_community
 streamlit
