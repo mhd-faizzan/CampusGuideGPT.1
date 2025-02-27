@@ -21,7 +21,7 @@ if not api_key:
 model_name = st.secrets.get("MODEL_NAME", "llama-3.3-70b-versatile")
 
 # Load Hochschule Harz data
-data_path = "data/hochschule_harz_data.csv"
+data_path = "data/HS_Harz_data.csv"  # 🔹 Updated file name here
 if not os.path.exists(data_path):
     st.error(f"Missing data file: {data_path}")
     st.stop()
