@@ -63,9 +63,14 @@ if user_query:
     # Generate response using Groq API
     def get_groq_model_response(api_key, model_name, prompt):
         url = "https://api.groq.com/openai/v1/completions"
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        # Correcting the 'model' field to be a string, not a dictionary
         data = {
-            "model": model_name,  # Fix: pass the model name as a string
+            "model": model_name,  # Pass the model name as a simple string
             "prompt": prompt,
             "max_tokens": 200,
             "temperature": 0.7,
@@ -83,7 +88,7 @@ if user_query:
             return None
 
         if response.status_code == 200:
-            return response.json()["choices"][0]["text"].strip()
+            return response.json().get("choices", [{}])[0].get("text", "").strip()
         else:
             return f"Error: {response.status_code}, {response.text}"
 
