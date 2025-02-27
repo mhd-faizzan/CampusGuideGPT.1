@@ -1,11 +1,9 @@
 import os
 import pandas as pd
-import faiss
 import requests
 import streamlit as st
 from langchain_community.vectorstores import FAISS  # Updated import
 from langchain.embeddings import HuggingFaceEmbeddings
-from sentence_transformers import SentenceTransformer
 
 # Ensure directories exist
 if not os.path.exists("faiss_index"):
@@ -21,7 +19,7 @@ if not api_key:
 model_name = st.secrets.get("MODEL_NAME", "llama-3.3-70b-versatile")
 
 # Load Hochschule Harz data
-data_path = "HS_Harz_data.csv"  # Direct reference to file in the root folder
+data_path = "HS_Harz_data.csv"
 if not os.path.exists(data_path):
     st.error(f"Missing data file: {data_path}")
     st.stop()
@@ -62,19 +60,17 @@ if user_query:
     results = vector_store.similarity_search_by_vector(query_embedding, k=2)
     relevant_info = "\n".join([result.page_content for result in results])
 
-    # Ensure relevant_info and user_query are strings
-    relevant_info = str(relevant_info)
-    user_query = str(user_query)
-
-    # Debugging - Print the data being sent to the API
-    st.write(f"Relevant Information:\n{relevant_info}")
-    st.write(f"User Query:\n{user_query}")
-
     # Generate response using Groq API
     def get_groq_model_response(api_key, model_name, prompt):
         url = "https://api.groq.com/openai/v1/completions"
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        data = {"model": model_name, "prompt": prompt, "max_tokens": 200, "temperature": 0.7, "stop": ["\n"]}
+        data = {
+            "model": model_name,  # Fix: pass the model name as a string
+            "prompt": prompt,
+            "max_tokens": 200,
+            "temperature": 0.7,
+            "stop": ["\n"]
+        }
 
         # Debugging - Print the data being sent to the API
         st.write(f"Data sent to API:\n{data}")
