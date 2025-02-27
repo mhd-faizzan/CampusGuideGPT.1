@@ -62,6 +62,10 @@ if user_query:
     results = vector_store.similarity_search_by_vector(query_embedding, k=2)
     relevant_info = "\n".join([result.page_content for result in results])
 
+    # Ensure relevant_info and user_query are strings
+    relevant_info = str(relevant_info)
+    user_query = str(user_query)
+
     # Generate response using Groq API
     def get_groq_model_response(api_key, model_name, prompt):
         url = "https://api.groq.com/openai/v1/completions"
