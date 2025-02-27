@@ -1,6 +1,8 @@
-streamlit
-requests
 faiss-cpu
-langchain
+langchain==0.1.16
+langchain_community
+streamlit
 pandas
-openai
+requests
+sentence-transformers
+torch
